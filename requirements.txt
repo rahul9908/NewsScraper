@@ -3,3 +3,4 @@ pandas
 transformers
 requests
 tensorflow
+torch
