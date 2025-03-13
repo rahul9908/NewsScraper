@@ -15,6 +15,14 @@ sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncas
 # Initialize summarization pipeline
 summarizer = pipeline("summarization", model="t5-small")
 
+# Function to get the time in EST
+def get_est_time():
+    # Get the current UTC time and convert it to EST time zone
+    utc_now = datetime.utcnow().replace(tzinfo=pytz.utc)  # Get UTC time
+    est = pytz.timezone('US/Eastern')  # Eastern Standard Time zone
+    est_now = utc_now.astimezone(est)  # Convert to EST
+    return est_now
+
 # Function to get news for a specific date
 def get_news_data(country='us', page_size=10, date=None):
     if date is None:
@@ -71,18 +79,11 @@ def scrape_news(date=None):
                 articles.append([title, "No description available", "N/A", "N/A", date])
         return pd.DataFrame(articles, columns=["Title", "Description", "Sentiment", "Summary", "Date"])
 
-
 # Timer for countdown to next update (set to 12:01 AM every day)
 def time_remaining():
-    # Set timezone to EST
-    est = pytz.timezone('US/Eastern')
-    # Get current time in UTC
-    current_time = datetime.now(pytz.utc)
-    # Convert to EST
-    est_now = current_time.astimezone(est)
-    
-    next_update_time = datetime.combine(est_now.date(), datetime.min.time()) + timedelta(days=1, minutes=1)  # Next day at 12:01 AM EST
-    remaining_time = next_update_time - est_now
+    est_now = get_est_time()  # Get the EST time
+    next_update_time = datetime.combine(est_now.date(), datetime.min.time(), tzinfo=est_now.tzinfo) + timedelta(days=1, minutes=1)  # Next day at 12:01 AM
+    remaining_time = next_update_time - est_now  # Now both are aware datetimes
 
     # Extract hours, minutes, and seconds
     hours, remainder = divmod(remaining_time.seconds, 3600)
