@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from transformers import pipeline
 import requests
-import pytz  # Import pytz to handle timezone
+import pytz
 
 # Your NewsAPI Key
 API_KEY = 'b511d67695ba44248857916965e5126a'  # Your actual API key
@@ -15,23 +15,10 @@ sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncas
 # Initialize summarization pipeline
 summarizer = pipeline("summarization", model="t5-small")
 
-# Function to get the current time in EST
-def get_est_time():
-    utc_now = datetime.utcnow().replace(tzinfo=pytz.utc)  # Get UTC time
-    est = pytz.timezone('US/Eastern')  # Define the EST timezone
-    est_now = utc_now.astimezone(est)  # Convert to EST
-    return est_now
-
-# Function to get yesterday's date in EST
-def get_yesterday_est():
-    est_now = get_est_time()
-    yesterday = est_now - timedelta(1)
-    return yesterday.strftime('%Y-%m-%d')
-
 # Function to get news for a specific date
 def get_news_data(country='us', page_size=10, date=None):
     if date is None:
-        date = get_yesterday_est()  # Use yesterday's date in EST
+        date = datetime.today().strftime('%Y-%m-%d')
     params = {
         'apiKey': API_KEY,
         'country': country,  # Fetch articles from the US
@@ -67,7 +54,7 @@ def summarize_article(description):
 # Function to scrape news and perform sentiment analysis and summarization
 def scrape_news(date=None):
     if date is None:
-        date = get_yesterday_est()  # Use yesterday's date in EST
+        date = datetime.today().strftime('%Y-%m-%d')
     news_data = get_news_data(country='us', page_size=10, date=date)
     
     if news_data:
@@ -84,9 +71,16 @@ def scrape_news(date=None):
                 articles.append([title, "No description available", "N/A", "N/A", date])
         return pd.DataFrame(articles, columns=["Title", "Description", "Sentiment", "Summary", "Date"])
 
-# Timer for countdown to next update (set to 12:01 AM every day in EST)
+
+# Timer for countdown to next update (set to 12:01 AM every day)
 def time_remaining():
-    est_now = get_est_time()
+    # Set timezone to EST
+    est = pytz.timezone('US/Eastern')
+    # Get current time in UTC
+    current_time = datetime.now(pytz.utc)
+    # Convert to EST
+    est_now = current_time.astimezone(est)
+    
     next_update_time = datetime.combine(est_now.date(), datetime.min.time()) + timedelta(days=1, minutes=1)  # Next day at 12:01 AM EST
     remaining_time = next_update_time - est_now
 
@@ -104,9 +98,9 @@ st.write("This is a web scraper that fetches news articles, performs sentiment a
 
 # Container for displaying the button and output
 with st.container():
-    st.subheader(f"Click the button to scrape news for {get_yesterday_est()}:")  # Use yesterday's date in EST
-    if st.button(f"Scrape News for {get_yesterday_est()}"):
-        articles = scrape_news(date=get_yesterday_est())  # Use yesterday's date in EST
+    st.subheader(f"Click the button to scrape news for { (datetime.today() - timedelta(1)).strftime('%Y-%m-%d') }:")
+    if st.button(f"Scrape News for { (datetime.today() - timedelta(1)).strftime('%Y-%m-%d') }"):
+        articles = scrape_news(date=(datetime.today() - timedelta(1)).strftime('%Y-%m-%d'))  # Use yesterday's date
         if articles is not None:
             st.dataframe(articles)  # Display the articles in a more readable format
         else:
