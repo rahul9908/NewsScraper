@@ -79,9 +79,12 @@ def scrape_news(date=None):
                 articles.append([title, "No description available", "N/A", "N/A", date])
         return pd.DataFrame(articles, columns=["Title", "Description", "Sentiment", "Summary", "Date"])
 
+# Get yesterday's date in EST
+est_now = get_est_time()
+yesterday = (est_now - timedelta(1)).strftime('%Y-%m-%d')
+
 # Timer for countdown to next update (set to 12:01 AM every day)
 def time_remaining():
-    est_now = get_est_time()  # Get the EST time
     next_update_time = datetime.combine(est_now.date(), datetime.min.time(), tzinfo=est_now.tzinfo) + timedelta(days=1, minutes=1)  # Next day at 12:01 AM
     remaining_time = next_update_time - est_now  # Now both are aware datetimes
 
@@ -99,9 +102,9 @@ st.write("This is a web scraper that fetches news articles, performs sentiment a
 
 # Container for displaying the button and output
 with st.container():
-    st.subheader(f"Click the button to scrape news for { (datetime.today() - timedelta(1)).strftime('%Y-%m-%d') }:")
-    if st.button(f"Scrape News for { (datetime.today() - timedelta(1)).strftime('%Y-%m-%d') }"):
-        articles = scrape_news(date=(datetime.today() - timedelta(1)).strftime('%Y-%m-%d'))  # Use yesterday's date
+    st.subheader(f"Click the button to scrape news for {yesterday}:")
+    if st.button(f"Scrape News for {yesterday}"):
+        articles = scrape_news(date=yesterday)  # Use yesterday's date
         if articles is not None:
             st.dataframe(articles)  # Display the articles in a more readable format
         else:
